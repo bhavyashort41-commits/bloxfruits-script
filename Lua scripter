@@ -1,0 +1,144 @@
+-- Blox Fruits Mobile Grinder (Auto Quest + Farm)
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local lp = Players.LocalPlayer
+
+local AUTO_FARM = false
+local AUTO_QUEST = false
+local FAST_ATTACK = false
+
+-- level
+function getLevel()
+    return lp.Data.Level.Value
+end
+
+-- quest system
+function startQuest()
+
+    local level = getLevel()
+    local remote = ReplicatedStorage.Remotes.CommF_
+
+    if level < 10 then
+        remote:InvokeServer("StartQuest","BanditQuest1",1)
+
+    elseif level < 30 then
+        remote:InvokeServer("StartQuest","JungleQuest",1)
+
+    elseif level < 60 then
+        remote:InvokeServer("StartQuest","BuggyQuest1",1)
+
+    elseif level < 120 then
+        remote:InvokeServer("StartQuest","DesertQuest",1)
+    end
+
+end
+
+-- mob finder
+function getMob()
+
+    local dist = math.huge
+    local target = nil
+
+    for _,v in pairs(Workspace.Enemies:GetChildren()) do
+        if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
+            if v.Humanoid.Health > 0 then
+
+                local mag = (lp.Character.HumanoidRootPart.Position -
+                v.HumanoidRootPart.Position).Magnitude
+
+                if mag < dist then
+                    dist = mag
+                    target = v
+                end
+            end
+        end
+    end
+
+    return target
+
+end
+
+-- attack
+function attack(mob)
+
+    repeat task.wait(0.15)
+
+        lp.Character.HumanoidRootPart.CFrame =
+        mob.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
+
+        local tool = lp.Character:FindFirstChildOfClass("Tool")
+        if tool then
+            tool:Activate()
+        end
+
+    until mob.Humanoid.Health <= 0 or not AUTO_FARM
+
+end
+
+-- loops
+spawn(function()
+
+    while task.wait(0.4) do
+
+        if AUTO_QUEST then
+            startQuest()
+        end
+
+        if AUTO_FARM then
+
+            local mob = getMob()
+
+            if mob then
+                attack(mob)
+            end
+
+        end
+
+    end
+
+end)
+
+-- GUI
+local gui = Instance.new("ScreenGui", game.CoreGui)
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0,220,0,180)
+frame.Position = UDim2.new(0.7,0,0.2,0)
+frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+frame.Active = true
+frame.Draggable = true
+
+local function button(name,pos,callback)
+
+    local btn = Instance.new("TextButton",frame)
+    btn.Size = UDim2.new(0,200,0,40)
+    btn.Position = UDim2.new(0,10,0,pos)
+    btn.Text = name.." : OFF"
+    btn.TextSize = 20
+
+    local state = false
+
+    btn.MouseButton1Click:Connect(function()
+
+        state = not state
+        btn.Text = name.." : "..(state and "ON" or "OFF")
+        callback(state)
+
+    end)
+
+end
+
+button("Auto Farm",20,function(v)
+AUTO_FARM=v
+end)
+
+button("Auto Quest",70,function(v)
+AUTO_QUEST=v
+end)
+
+button("Fast Attack",120,function(v)
+FAST_ATTACK=v
+end)
