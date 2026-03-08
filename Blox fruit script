@@ -1,0 +1,125 @@
+-- Blox Fruits Auto Quest + Auto Farm (Mobile)
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local lp = Players.LocalPlayer
+
+local AUTO_FARM = false
+local AUTO_QUEST = false
+
+-- start quest
+function startQuest()
+
+    local questRemote = ReplicatedStorage:FindFirstChild("Remotes")
+    if questRemote then
+        questRemote:FindFirstChild("CommF_"):InvokeServer("StartQuest","BanditQuest1",1)
+    end
+
+end
+
+-- find closest mob
+function getMob()
+
+    local dist = math.huge
+    local target = nil
+
+    for _,v in pairs(Workspace.Enemies:GetChildren()) do
+        if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") then
+            if v.Humanoid.Health > 0 then
+
+                local mag = (lp.Character.HumanoidRootPart.Position -
+                v.HumanoidRootPart.Position).Magnitude
+
+                if mag < dist then
+                    dist = mag
+                    target = v
+                end
+            end
+        end
+    end
+
+    return target
+
+end
+
+-- attack mob
+function attack(mob)
+
+    repeat task.wait(0.2)
+
+        if mob and mob:FindFirstChild("HumanoidRootPart") then
+
+            lp.Character.HumanoidRootPart.CFrame =
+            mob.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
+
+            local tool = lp.Character:FindFirstChildOfClass("Tool")
+            if tool then
+                tool:Activate()
+            end
+
+        end
+
+    until mob.Humanoid.Health <= 0 or not AUTO_FARM
+
+end
+
+-- auto farm loop
+spawn(function()
+
+    while task.wait(0.5) do
+
+        if AUTO_QUEST then
+            startQuest()
+        end
+
+        if AUTO_FARM then
+
+            local mob = getMob()
+
+            if mob then
+                attack(mob)
+            end
+
+        end
+
+    end
+
+end)
+
+-- GUI
+local gui = Instance.new("ScreenGui", game.CoreGui)
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0,220,0,140)
+frame.Position = UDim2.new(0.7,0,0.2,0)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.Active = true
+frame.Draggable = true
+
+local farm = Instance.new("TextButton", frame)
+farm.Size = UDim2.new(0,200,0,40)
+farm.Position = UDim2.new(0,10,0,20)
+farm.Text = "Auto Farm : OFF"
+farm.TextSize = 20
+
+local quest = Instance.new("TextButton", frame)
+quest.Size = UDim2.new(0,200,0,40)
+quest.Position = UDim2.new(0,10,0,70)
+quest.Text = "Auto Quest : OFF"
+quest.TextSize = 20
+
+farm.MouseButton1Click:Connect(function()
+
+    AUTO_FARM = not AUTO_FARM
+    farm.Text = "Auto Farm : "..(AUTO_FARM and "ON" or "OFF")
+
+end)
+
+quest.MouseButton1Click:Connect(function()
+
+    AUTO_QUEST = not AUTO_QUEST
+    quest.Text = "Auto Quest : "..(AUTO_QUEST and "ON" or "OFF")
+
+end)
